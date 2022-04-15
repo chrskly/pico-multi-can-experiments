@@ -24,6 +24,8 @@
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
+const uint LED_PIN = PICO_DEFAULT_LED_PIN;
+
 
 uint8_t can_data_buffer[16];
 
@@ -196,15 +198,19 @@ uint8_t CAN_1_receive(uint8_t * can_rx_data) {
 }
 
 void CAN_0_receive_callback(uint gpio, uint32_t events) {
+  gpio_put(LED_PIN, 1);
   uint8_t data = CAN_0_receive(can_data_buffer);
   gpio_acknowledge_irq(CAN_0_INT, GPIO_IRQ_LEVEL_LOW);
   printf("CAN0 received : 0x%.8X", data);
+  gpio_put(LED_PIN, 0);
 }
 
 void CAN_1_receive_callback(uint gpio, uint32_t events) {
+  gpio_put(LED_PIN, 1);
   uint8_t data = CAN_1_receive(can_data_buffer);
   gpio_acknowledge_irq(CAN_1_INT, GPIO_IRQ_LEVEL_LOW);
   printf("CAN1 received : 0x%.8X", data);
+  gpio_put(LED_PIN, 0);
 }
 
 void CAN_configure(uint16_t id) {
@@ -254,6 +260,10 @@ int main() {
     uart_init(UART_ID, BAUD_RATE);
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+
+    // LED blinks when msg received
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
 
     while(1) {
         // Send DEADBEEF from CAN 0
