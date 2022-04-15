@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
+#include "hardware/uart.h"
 #include "can.h"
 
 #define SPI_PORT  spi0
@@ -16,6 +17,12 @@
 // CAN board 1
 #define CAN_1_CS   11
 #define CAN_1_INT  13
+
+// Serial port
+#define UART_ID uart0
+#define BAUD_RATE 115200
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
 
 
 uint8_t can_data_buffer[16];
@@ -191,11 +198,13 @@ uint8_t CAN_1_receive(uint8_t * can_rx_data) {
 void CAN_0_receive_callback(uint gpio, uint32_t events) {
   uint8_t data = CAN_0_receive(can_data_buffer);
   gpio_acknowledge_irq(CAN_0_INT, GPIO_IRQ_LEVEL_LOW);
+  printf("CAN0 received : 0x%.8X", data);
 }
 
 void CAN_1_receive_callback(uint gpio, uint32_t events) {
   uint8_t data = CAN_1_receive(can_data_buffer);
   gpio_acknowledge_irq(CAN_1_INT, GPIO_IRQ_LEVEL_LOW);
+  printf("CAN1 received : 0x%.8X", data);
 }
 
 void CAN_configure(uint16_t id) {
@@ -241,5 +250,15 @@ void CAN_configure(uint16_t id) {
 
 
 int main() {
-    CAN_0_transmit(0x01, (uint8_t[]){ 0xDE, 0xAD, 0xBE, 0xEF }, 4);
+    // set up the serial port
+    uart_init(UART_ID, BAUD_RATE);
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+
+    while(1) {
+        // Send DEADBEEF from CAN 0
+        CAN_0_transmit(0x01, (uint8_t[]){ 0xDE, 0xAD, 0xBE, 0xEF }, 4);
+        // sleep for 1 second
+        busy_wait_ms(1000);
+    }
 }
