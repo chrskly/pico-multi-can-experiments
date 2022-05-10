@@ -3,3 +3,6 @@ build
 */*.elf
 */*.uf2
 */*.hex
+*/*.bin
+*/*.dis
+*/*.map
